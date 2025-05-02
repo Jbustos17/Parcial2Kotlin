@@ -1,34 +1,52 @@
 package com.example.parcial2.Screens
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import com.example.parcial2.Data.Producto
+import com.example.parcial2.R
 import com.example.parcial2.Viewmodel.ProductoViewModel
-
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarritoScreen(navController: NavController, viewModel: ProductoViewModel) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var mostrarConfirmacion by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Carrito de Compras") },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors()
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.carrito),
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(300.dp)
+                        )
+
+                    }
+                }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -36,9 +54,7 @@ fun CarritoScreen(navController: NavController, viewModel: ProductoViewModel) {
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            LazyColumn(
-                modifier = Modifier.weight(1f)
-            ) {
+            LazyColumn(modifier = Modifier.weight(1f)) {
                 items(viewModel.carrito) { producto ->
                     CarritoItem(producto)
                 }
@@ -59,17 +75,25 @@ fun CarritoScreen(navController: NavController, viewModel: ProductoViewModel) {
                     onClick = {
                         mostrarConfirmacion = true
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF004A93))
                 ) {
+                    Icon(Icons.Default.Check, contentDescription = "Finalizar Compra")
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text("Finalizar Compra")
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                OutlinedButton(
+                Button(
                     onClick = { navController.popBackStack() },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF004A93))
                 ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text("Volver")
                 }
             }
@@ -84,6 +108,9 @@ fun CarritoScreen(navController: NavController, viewModel: ProductoViewModel) {
                     TextButton(onClick = {
                         mostrarConfirmacion = false
                         viewModel.limpiarCarrito()
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Carrito vaciado después de la compra")
+                        }
                         navController.popBackStack()
                     }) {
                         Text("Aceptar")
@@ -100,23 +127,31 @@ fun CarritoItem(producto: Producto) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEFEFEF))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(8.dp)
         ) {
             AsyncImage(
-                model = producto.imagenUrl,
+                model = producto.imagenUrl.trim(),
                 contentDescription = producto.nombre,
-                placeholder = painterResource(id = android.R.drawable.progress_indeterminate_horizontal),
-                error = painterResource(id = android.R.drawable.ic_menu_report_image),
-                modifier = Modifier.size(64.dp)
+                placeholder = painterResource(id = R.drawable.placeholder),
+                error = painterResource(id = R.drawable.error),
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(8.dp),
+                contentScale = ContentScale.Crop
             )
+
             Spacer(modifier = Modifier.width(8.dp))
+
             Column {
-                Text(producto.nombre, fontWeight = FontWeight.Bold)
-                Text("Precio: $${producto.precio}")
+                Text(producto.nombre, style = MaterialTheme.typography.titleLarge)
+                Text("Precio: $${producto.precio}", style = MaterialTheme.typography.titleMedium)
+                Text(producto.descripcion, style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
